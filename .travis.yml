@@ -19,7 +19,6 @@ addons:
       - cmake-data
       - cmake
 
-
 script:
   - mkdir build
   - cd build
