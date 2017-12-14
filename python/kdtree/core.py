@@ -78,7 +78,8 @@ class KNeighborsBase(metaclass=ABCMeta):
             X = X.astype(np.float64)
         if y.dtype != np.float64:
             y = y.astype(np.float64)
-            
+        self.X = X
+        self.y = y
         n_samples, n_features = X.shape
         datas = X.ctypes.data_as(POINTER(c_double))
         labels = y.ctypes.data_as(POINTER(c_double))
