@@ -25,5 +25,5 @@ script:
   - cmake ..
   - make
   - cd ..
-  - cp build/libkdtree* python/libkdtree
+  - cp build/libkdtree* python/kdtree
   - python3 python/test.py

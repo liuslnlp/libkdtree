@@ -16,6 +16,8 @@ def test_kd_tree(n_samples, n_features=5):
 
 if __name__ == '__main__':
     for _ in range(500):
+        test_kd_tree(300, 5)
+    for _ in range(500):
         test_kd_tree(300, 10)
     for _ in range(500):
         test_kd_tree(300, 30)
