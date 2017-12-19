@@ -1,5 +1,5 @@
 import numpy as np
-from ctypes import CDLL, c_size_t, c_double, c_bool, POINTER, Structure
+from ctypes import CDLL, c_size_t, c_float, c_bool, POINTER, Structure
 from abc import ABCMeta, abstractmethod
 import os
 import sys
@@ -30,7 +30,7 @@ def fillprototype(f, restype, argtypes):
     {
         return x + y;    
     }
-    fillprototype(add, [c_double, c_double])
+    fillprototype(add, [c_float, c_float])
 
     """
     f.restype = restype
@@ -52,11 +52,11 @@ tree_node._fields_ = [
 class tree_model(Structure):
     _fields_ = [
         ('root', POINTER(tree_node)),
-        ('datas', POINTER(c_double)),
-        ('labels', POINTER(c_double)),
+        ('datas', POINTER(c_float)),
+        ('labels', POINTER(c_float)),
         ('n_samples', c_size_t),
         ('n_features', c_size_t),
-        ('p', c_double)
+        ('p', c_float)
     ]
 
 
@@ -74,25 +74,25 @@ class KNeighborsBase(metaclass=ABCMeta):
             raise TypeError("X must be np.ndarray")
         if not isinstance(y, np.ndarray):
             raise TypeError("y must be np.ndarray")
-        if X.dtype != np.float64:
-            X = X.astype(np.float64)
-        if y.dtype != np.float64:
-            y = y.astype(np.float64)
+        if X.dtype != np.float32:
+            X = X.astype(np.float32)
+        if y.dtype != np.float32:
+            y = y.astype(np.float32)
         self.X = X
         self.y = y
         n_samples, n_features = X.shape
-        datas = X.ctypes.data_as(POINTER(c_double))
-        labels = y.ctypes.data_as(POINTER(c_double))
+        datas = X.ctypes.data_as(POINTER(c_float))
+        labels = y.ctypes.data_as(POINTER(c_float))
         self._model = _lib.build_kdtree(datas, labels,
                                        n_samples, n_features, self.p)
 
     def _predict(self, X, is_clf):
         if not hasattr(self, "_model"):
             raise ValueError("Please call function `fit` before predict")
-        if X.dtype != np.float64:
-            X = X.astype(np.float64)
+        if X.dtype != np.float32:
+            X = X.astype(np.float32)
 
-        test_set = X.ctypes.data_as(POINTER(c_double))
+        test_set = X.ctypes.data_as(POINTER(c_float))
         c_arr = _lib.k_nearests_neighbor(
             self._model, test_set, X.shape[0], self.k, is_clf)
         return np.ctypeslib.as_array(c_arr, shape=(X.shape[0],))
@@ -121,21 +121,21 @@ class KNeighborsRegressor(KNeighborsBase):
 fillprototype(_lib.free_tree_memory, None, [POINTER(tree_node)])
 fillprototype(_lib.build_kdtree,
               POINTER(tree_model), [
-                  POINTER(c_double),
-                  POINTER(c_double),
-                  c_size_t, c_size_t, c_double
+                  POINTER(c_float),
+                  POINTER(c_float),
+                  c_size_t, c_size_t, c_float
               ])
 fillprototype(_lib.k_nearests_neighbor,
-              POINTER(c_double), [
+              POINTER(c_float), [
                   POINTER(tree_model),
-                  POINTER(c_double),
+                  POINTER(c_float),
                   c_size_t, c_size_t, c_bool
               ])
 
 fillprototype(_lib.find_k_nearests, None, [
     POINTER(tree_model),
-    POINTER(c_double),
+    POINTER(c_float),
     c_size_t,
     POINTER(c_size_t),
-    POINTER(c_double)
+    POINTER(c_float)
 ])

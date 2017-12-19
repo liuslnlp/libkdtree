@@ -23,21 +23,21 @@ struct DLLExport tree_node
 struct DLLExport tree_model
 {
     tree_node *root;
-    const double *datas;
-    const double *labels;
+    const float *datas;
+    const float *labels;
     size_t n_samples;
     size_t n_features;
-    double p;
+    float p;
 };
 
 
 DLLExport void free_tree_memory(tree_node *root);
-DLLExport tree_model* build_kdtree(const double *datas, const double *labels,
-                                   size_t rows, size_t cols, double p);
-DLLExport double* k_nearests_neighbor(const tree_model *model, const double *X_test,
+DLLExport tree_model* build_kdtree(const float *datas, const float *labels,
+                                   size_t rows, size_t cols, float p);
+DLLExport float* k_nearests_neighbor(const tree_model *model, const float *X_test,
                                      size_t len, size_t k, bool clf);
-DLLExport void find_k_nearests(const tree_model *model, const double *coor,
-                              size_t k, size_t *args, double *dists);
+DLLExport void find_k_nearests(const tree_model *model, const float *coor,
+                              size_t k, size_t *args, float *dists);
 
 
 #ifdef __cplusplus

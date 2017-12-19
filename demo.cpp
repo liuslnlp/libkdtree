@@ -4,7 +4,7 @@
 
 
 int main() {
-    double datas[100] = {1.3, 1.3, 1.3,
+    float datas[100] = {1.3, 1.3, 1.3,
                          8.3, 8.3, 8.3,
                          2.3, 2.3, 2.3,
                          1.2, 1.2, 1.2,
@@ -16,13 +16,13 @@ int main() {
                          12, 12, 12,
                          4, 4, 4,
                          5, 5, 5};
-    double labels[100];
+    float labels[100];
     for(size_t i = 0; i < 12; ++i)
-        labels[i] = (double)i;
+        labels[i] = (float)i;
     tree_model *model = build_kdtree(datas, labels, 12, 3, 2);
-    double test[6] = {3, 3, 3, 3, 3, 3};
+    float test[6] = {3, 3, 3, 3, 3, 3};
     size_t args[100];
-    double dists[100];
+    float dists[100];
     find_k_nearests(model, test, 5, args, dists);
 
     printf("K-Nearest: \n");
@@ -30,7 +30,7 @@ int main() {
         printf("ID %llu, Dist %.2f\n", args[i], dists[i]);
     }
 
-    double *ans = k_nearests_neighbor(model, test, 2, 5, false);
+    float *ans = k_nearests_neighbor(model, test, 2, 5, false);
     printf("k Nearest Neighbor Regressor: \n%.2f %.2f\n", ans[0], ans[1]);
 
     tree_node *root = model->root;
