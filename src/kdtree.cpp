@@ -8,6 +8,8 @@
 #include <stack>
 #include <queue>
 #include <cstring>
+#include <cassert>
+#include <cstdlib>
 
 // Example:
 //     int x = Malloc(int, 10);
@@ -16,6 +18,7 @@
 
 // If you need to use Intel MKL to accelerate,
 // you can cancel the next line comment.
+
 //#define USE_INTEL_MKL
 
 
@@ -49,6 +52,7 @@ DLLExport void free_tree_memory(tree_node *root) {
 
 class KDTree {
 public:
+	KDTree(){}
 
     KDTree(tree_node *root, const float *datas, size_t rows, size_t cols, float p);
 
@@ -181,7 +185,7 @@ float vote(const float *arr, size_t len) {
     size_t cur_max = 0;
     for (auto &i : counter) {
         if (i.second >= cur_max) {
-            cur_arg_max = i.first;
+            cur_arg_max = static_cast<float>(i.first);
             cur_max = i.second;
         }
     }
@@ -190,25 +194,60 @@ float vote(const float *arr, size_t len) {
 
 DLLExport float *
 k_nearests_neighbor(const tree_model *model, const float *X_test, size_t len, size_t k, bool clf) {
-    KDTree tree(model->root, model->datas, model->n_samples, model->n_features, model->p);
-    float *ans = Malloc(float, len);
-    size_t *args = Malloc(size_t, k);
-    float *dists = Malloc(float, k);
-    float *y_pred = Malloc(float, k);
-    size_t i, j;
-    for (i = 0; i < len; ++i) {
-        tree.CFindKNearests(X_test + i * model->n_features, k, args, dists);
-        for (j = 0; j < k; ++j)
-            y_pred[j] = model->labels[args[j]];
-        if (clf)
-            ans[i] = vote(y_pred, k);
-        else
-            ans[i] = mean(y_pred, k);
-    }
-    free(args);
-    free(y_pred);
-    free(dists);
-    return ans;
+	float *ans = Malloc(float, len);
+	size_t *args;
+	float *dists, *y_pred;
+	size_t arr_len;
+	int i, j;
+
+#ifdef USE_INTEL_MKL
+    int n_procs = omp_get_num_procs();
+	assert(n_procs < 100);
+	KDTree *trees[100];
+	for (size_t i = 0; i < n_procs; ++i)
+		trees[i] = new KDTree(model->root, model->datas, model->n_samples, model->n_features, model->p);
+	arr_len = k * n_procs;
+#else
+	arr_len = k;
+	KDTree tree(model->root, model->datas, model->n_samples, model->n_features, model->p);
+#endif
+
+	args = Malloc(size_t, arr_len);
+	dists = Malloc(float, arr_len);
+	y_pred = Malloc(float, arr_len);
+
+#ifdef USE_INTEL_MKL
+#pragma omp parallel for
+	for (i = 0; i < len; ++i)
+	{
+		int thread_num = omp_get_thread_num();
+		trees[thread_num]->CFindKNearests(X_test + i * model->n_features, 
+			k, args + k * thread_num, dists + k * thread_num);
+		for (j = 0; j < k; ++j)
+			y_pred[j + k * thread_num] = model->labels[args[j + k * thread_num]];
+		if (clf)
+			ans[i] = vote(y_pred + k * thread_num, k);
+		else
+			ans[i] = mean(y_pred + k * thread_num, k);
+	}
+	for (size_t i = 0; i < n_procs; ++i)
+		delete trees[i];
+	
+#else
+	for (i = 0; i < len; ++i) {
+		tree.CFindKNearests(X_test + i * model->n_features, k, args, dists);
+		for (j = 0; j < k; ++j)
+			y_pred[j] = model->labels[args[j]];
+		if (clf)
+			ans[i] = vote(y_pred, k);
+		else
+			ans[i] = mean(y_pred, k);
+	}
+#endif
+	free(args);
+	free(y_pred);
+	free(dists);
+	return ans;
 }
 
 
@@ -371,7 +410,7 @@ inline float KDTree::GetDist(size_t i, const float *coor) {
     vsSub(n_features, datas + idx, coor, mkl_buf_);
     vsPowx(n_features, mkl_buf_, p, mkl_buf_);
     float dist = cblas_sasum(n_features, mkl_buf_, 1);
-    return pow(dist, 1.0 / p);
+    return static_cast<float>(pow(dist, 1.0 / p));
 }
 #else
 
@@ -381,7 +420,7 @@ inline float KDTree::GetDist(size_t i, const float *coor) {
 #pragma omp parallel for reduction(+:dist)
     for (int t = 0; t < n_features; ++t)
         dist += pow(datas[idx + t] - coor[t], p);
-    return pow(dist, 1.0 / p);
+    return static_cast<float>(pow(dist, 1.0 / p));
 }
 
 #endif
