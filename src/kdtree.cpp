@@ -284,7 +284,7 @@ std::vector<std::tuple<size_t, float>> KDTree::FindKNearests(const float *coor, 
 
     while (p) {
         HeapStackPush(paths, p, coor, k);
-        p = coor[p->split] <= GetDimVal(p->id, p->split) ? p = p->left : p = p->right;
+        p = coor[p->split] <= GetDimVal(p->id, p->split) ? p->left : p->right;
     }
     while (!paths.empty()) {
         p = paths.top();
